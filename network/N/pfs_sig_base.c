@@ -152,3 +152,183 @@ static t_pfs_domain * get_domain_by_group(char *group)
 	return NULL;
 }
 
+static char * get_newname_by_oldname(char *oldname)
+{
+	int hash = r5hash(oldname);
+	list_head_t *hashlist = &(domain_change_list[hash&0x0F]);
+	t_domain_change *name_change = NULL;
+	list_head_t *l;
+	list_for_each_entry_safe_l(name_change, l, hashlist, hlist)
+	{
+		if (strcmp(name_change->olddomain, oldname) == 0)
+			return name_change->newdomain;
+	}
+	return NULL;
+}
+
+static int add_name_change(char *oldname, char *newname)
+{
+	char *newname2 = get_newname_by_oldname(oldname);
+	if (newname2)
+	{
+		if (strcmp(newname2, newname) == 0)
+		{
+			LOG(pfs_sig_log, LOG_NORMAL, "dup cfg %s %s\n", oldname, newname2);
+			return 0;
+		}
+		LOG(pfs_sig_log, LOG_ERROR, "err cfg %s %s %s\n", oldname, newname2, newname);
+		return -1;
+	}
+
+	t_domain_change *name_change = (t_domain_change *) malloc(sizeof(t_domain_change));
+	if (name_change == NULL)
+	{
+		LOG(pfs_sig_log, LOG_ERROR, "malloc err %m\n");
+		return -1;
+	}
+	memset(name_change, 0, sizeof(t_domain_change));
+	snprintf(name_change->olddomain, sizeof(name_change->olddomain), "%s", oldname);
+	snprintf(name_change->newdomain, sizeof(name_change->newdomain), "%s", newname);
+	INIT_LIST_HEAD(&(name_change->hlist));
+	int hash = r5hash(oldname);
+	list_add(&(name_change->hlist), &domain_change_list[hash&0x0F]);
+	return 0;
+}
+
+static int do_init_name_change(char *namefile)
+{
+	FILE *fp = fopen(namefile, "r");
+	if (fp == NULL)
+	{
+		LOG(pfs_sig_log, LOG_ERROR, "open %s err %m\n", namefile);
+		return -1;
+	}
+	int ret = 0;
+	char buf[2048] = {0x0};
+	while (fgets(buf, sizeof(buf), fp))
+	{
+		char *t = strrchr(buf, '\n');
+		if (t)
+			*t = 0x0;
+		t = strchr(buf, ':');
+		if (t == NULL)
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "err buf %s\n", buf);
+			ret = -1;
+			break;
+		}
+		*t = 0x0;
+		if (add_name_change(buf, t+1))
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "add %s %s err !\n", buf, t+1);
+			ret = -1;
+			break;
+		}
+		memset(buf, 0, sizeof(buf));
+	}
+	fclose(fp);
+	return ret;
+}
+
+static int get_type_by_name(char *oldname)
+{
+	int hash = r5hash(oldname);
+	list_head_t *hashlist = &(storage_select_list[hash&0x0F]);
+	t_storage_select *storage_select = NULL;
+	list_head_t *l;
+	list_for_each_entry_safe_l(storage_select, l, hashlist, hlist)
+	{
+		if (strcmp(storage_select->domain, oldname) == 0)
+			return storage_select->type;
+	}
+	return -1;
+}
+
+static int add_storage_select(char *oldname, int type)
+{
+	int type1 = get_type_by_name(oldname);
+	if (type1 >= 0)
+	{
+		if (type1 == type)
+		{
+			LOG(pfs_sig_log, LOG_NORMAL, "dup cfg %s %d\n", oldname, type);
+			return 0;
+		}
+		LOG(pfs_sig_log, LOG_ERROR, "err cfg %s %d %d\n", oldname, type, type1);
+		return -1;
+	}
+
+	t_storage_select *storage_select = (t_storage_select *) malloc(sizeof(t_storage_select));
+	if (storage_select == NULL)
+	{
+		LOG(pfs_sig_log, LOG_ERROR, "malloc err %m\n");
+		return -1;
+	}
+	memset(storage_select, 0, sizeof(t_storage_select));
+	snprintf(storage_select->domain, sizeof(storage_select->domain), "%s", oldname);
+	storage_select->type = type;
+	INIT_LIST_HEAD(&(storage_select->hlist));
+	int hash = r5hash(oldname);
+	list_add(&(storage_select->hlist), &storage_select_list[hash&0x0F]);
+	return 0;
+}
+
+static int do_init_storage_select(char *namefile)
+{
+	FILE *fp = fopen(namefile, "r");
+	if (fp == NULL)
+	{
+		LOG(pfs_sig_log, LOG_ERROR, "open %s err %m\n", namefile);
+		return -1;
+	}
+	int ret = 0;
+	char buf[2048] = {0x0};
+	while (fgets(buf, sizeof(buf), fp))
+	{
+		char *t = strrchr(buf, '\n');
+		if (t)
+			*t = 0x0;
+		t = strchr(buf, ':');
+		if (t == NULL)
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "err buf %s\n", buf);
+			ret = -1;
+			break;
+		}
+		*t = 0x0;
+		if (add_storage_select(buf, atoi(t+1)))
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "add %s %s err !\n", buf, t+1);
+			ret = -1;
+			break;
+		}
+		memset(buf, 0, sizeof(buf));
+	}
+	fclose(fp);
+	return ret;
+}
+
+static int do_init_proxy(char *proxyfile)
+{
+	FILE *fp = fopen(proxyfile, "r");
+	if (fp == NULL)
+	{
+		LOG(pfs_sig_log, LOG_ERROR, "open %s err %m\n", proxyfile);
+		return -1;
+	}
+	memset(proxy_sip, 0, sizeof(proxy_sip));
+	int idx = 0;
+	char buf[2048] = {0x0};
+	while (fgets(buf, sizeof(buf), fp))
+	{
+		char *t = strrchr(buf, '\n');
+		if (t)
+			*t = 0x0;
+		proxy_ip[idx] = str2ip(buf);
+		snprintf(proxy_sip[idx], 16, "%s", buf);
+		idx++;
+		memset(buf, 0, sizeof(buf));
+	}
+	fclose(fp);
+	return 0;
+}

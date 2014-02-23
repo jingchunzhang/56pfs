@@ -109,9 +109,12 @@ typedef struct {
 	uint16_t dir_uid;
 	uint16_t lock_timeout;
 	uint16_t poss_interval;
+	uint16_t sync_dir_span;
 	uint8_t pfs_test;
 	uint8_t retry;
 	uint8_t policy;
+	uint8_t check_task_timeout;
+	uint8_t sync_dir_count;
 } t_g_config;
 
 enum {IP_ONLINE = 0, IP_OFFLINE};

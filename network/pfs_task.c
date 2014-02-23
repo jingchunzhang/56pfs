@@ -28,7 +28,7 @@ uint64_t need_send_bytes;  /*等待发送的字节数*/
 uint64_t been_send_bytes;  /*已经发送的字节数*/
 
 const char *task_status[TASK_Q_UNKNOWN] = {"TASK_Q_DELAY", "TASK_Q_WAIT", "TASK_Q_WAIT_TMP", "TASK_Q_WAIT_SYNC", "TASK_Q_WAIT_SYNC_IP", "TASK_Q_WAIT_SYNC_DIR", "TASK_Q_WAIT_SYNC_DIR_TMP", "TASK_Q_SYNC_DIR", "TASK_Q_SYNC_DIR_TMP", "TASK_Q_RUN", "TASK_Q_FIN", "TASK_Q_CLEAN", "TASK_Q_HOME", "TASK_Q_SEND", "TASK_Q_RECV", "TASK_Q_SYNC_VOSS", "TASK_Q_SYNC_DIR_REQ", "TASK_Q_SYNC_DIR_RSP"};
-const char *over_status[OVER_LAST] = {"OVER_UNKNOWN", "OVER_OK", "OVER_E_MD5", "OVER_PEERERR", "TASK_Q_EXIST", "OVER_PEERCLOSE", "OVER_UNLINK", "OVER_TIMEOUT", "OVER_MALLOC", "OVER_SRC_DOMAIN_ERR", "OVER_SRC_IP_OFFLINE", "OVER_E_OPEN_SRCFILE", "OVER_E_OPEN_DSTFILE", "OVER_E_IP", "OVER_E_TYPE", "OVER_SEND_LEN", "OVER_TOO_MANY_TRY", "OVER_DISK_ERR"};
+const char *over_status[OVER_LAST] = {"OVER_UNKNOWN", "OVER_OK", "OVER_E_MD5", "OVER_PEERERR", "TASK_Q_EXIST", "OVER_PEERCLOSE", "OVER_UNLINK", "OVER_TIMEOUT", "OVER_MALLOC", "OVER_SRC_DOMAIN_ERR", "OVER_SRC_IP_OFFLINE", "OVER_E_OPEN_SRCFILE", "OVER_E_OPEN_DSTFILE", "OVER_E_IP", "OVER_E_TYPE", "OVER_SEND_LEN", "OVER_TOO_MANY_TRY", "OVER_DISK_ERR", "OVER_UP_ERR"};
 /*
  * every status have a list
  * 0:wait
@@ -226,6 +226,7 @@ void report_2_nm()
 	for (i = TASK_Q_DELAY ; i < TASK_Q_HOME; i++)
 	{
 		totaltask += get_task_count(i);
+		SetInt(rulebase, get_task_count(i));
 		rulebase++;
 	}
 	LOG(glogfd, LOG_NORMAL, "report 2 nm %s  %d\n", buf, totaltask);
@@ -265,6 +266,8 @@ static void check_task_timeout(t_pfs_tasklist *task)
 
 void do_timeout_task()
 {
+	if (g_config.check_task_timeout == 0)
+		return;
 	int i = 0;
 	for (i = TASK_Q_DELAY ; i < TASK_Q_CLEAN; i++)
 	{

@@ -6,6 +6,8 @@
 void  sync_dir_thread(void * arg)
 {
 	t_pfs_tasklist *task = NULL;
+	init_sync_list();
+	init_sync_flag = 1;
 	int ret = 0;
 	while (1)
 	{

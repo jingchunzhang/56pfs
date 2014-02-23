@@ -32,6 +32,11 @@ extern t_g_config g_config;
 static list_head_t activelist;  //用来检测超时
 static list_head_t online_list[256]; //用来快速定位查找
 
+static list_head_t domain_change_list[16]; 
+static list_head_t storage_select_list[16]; 
+
+uint32_t proxy_ip[16];
+char proxy_sip[16][16];
 int svc_initconn(int fd); 
 int active_send(pfs_fcs_peer *peer, t_pfs_sig_head *h, t_pfs_sig_body *b);
 #include "pfs_sig_base.c"
@@ -63,7 +68,43 @@ int svc_init()
 	{
 		INIT_LIST_HEAD(&online_list[i]);
 	}
-	
+
+	for (i = 0; i < 16; i++)
+	{
+		INIT_LIST_HEAD(&domain_change_list[i]);
+		INIT_LIST_HEAD(&storage_select_list[i]);
+	}
+
+	char *name_change_file = myconfig_get_value("domain_change_file");
+	if (name_change_file)
+	{
+		if (do_init_name_change(name_change_file))
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "do_init_name_change %s err %m\n", name_change_file);
+			return -1;
+		}
+	}
+
+	char *storage_select_file = myconfig_get_value("storage_select_file");
+	if (storage_select_file)
+	{
+		if (do_init_storage_select(storage_select_file))
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "do_init_storage_select %s err %m\n", storage_select_file);
+			return -1;
+		}
+	}
+	memset(proxy_ip, 0, sizeof(proxy_ip));
+	char *proxy_file = myconfig_get_value("proxy_file");
+	if (proxy_file)
+	{
+		if (do_init_proxy(proxy_file))
+		{
+			LOG(pfs_sig_log, LOG_ERROR, "do_init_proxy %s err %m\n", proxy_file);
+			return -1;
+		}
+	}
+
 	time_t now = time(NULL);
 	update_sort_policy(now);
 	self_stat = ON_LINE;

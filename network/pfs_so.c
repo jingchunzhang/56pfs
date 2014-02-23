@@ -53,6 +53,7 @@ static int sub_init_signalling(char *so)
 	solib.svc_finiconn = (proc_fini)dlsym(solib.handle, "svc_finiconn");
 	solib.svc_timeout = (proc_timeout)dlsym(solib.handle, "svc_timeout" );
 	solib.svc_send_once = (proc_method)dlsym(solib.handle, "svc_send_once" );
+	solib.svc_check_send = (proc_check)dlsym(solib.handle, "svc_check_send" );
 	if (solib.svc_recv && solib.svc_send)
 		return 0;
 	LOG(glogfd, LOG_ERROR, "svc_send and svc_recv must be imp!\n");
@@ -163,7 +164,7 @@ static void do_send(int fd)
 {
 	LOG(glogfd, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
 	int ret = SEND_ADD_EPOLLIN;
-	int n = 0;
+	ssize_t n = 0;
 	struct conn *curcon = &acon[fd];
 	if (curcon->fd < 0)
 	{
@@ -223,6 +224,14 @@ static void do_send(int fd)
 			{
 				LOG(glogfd, LOG_ERROR, "%s:%s:%d fd[%d] send err %d:%d:%m\n", ID, FUNC, LN, fd, n, len);
 				ret = SEND_CLOSE;
+			}
+			if (n == 0 && solib.svc_check_send)
+			{
+				if (solib.svc_check_send(fd, n, start + len1) < 0)
+				{
+					LOG(glogfd, LOG_ERROR, "%s:%s:%d fd[%d] check send %d:%d\n", ID, FUNC, LN, fd, start, len1);
+					ret = SEND_CLOSE;
+				}
 			}
 			break;
 		}

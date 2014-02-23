@@ -43,4 +43,16 @@ typedef struct {
 	int total_sync_task;
 	int total_synced_task;
 } t_sync_para;
+
+typedef struct {
+	char olddomain[64];
+	char newdomain[64];
+	list_head_t hlist;
+} t_domain_change;
+
+typedef struct {
+	char domain[64];
+	int type;
+	list_head_t hlist;
+} t_storage_select;
 #endif

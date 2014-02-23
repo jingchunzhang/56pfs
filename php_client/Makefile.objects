@@ -1,5 +1,5 @@
-pfs_client.lo: /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client/pfs_client.c
-	$(LIBTOOL) --mode=compile $(CC)  -I. -I/home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client/pfs_client.c -o pfs_client.lo 
+pfs_client.lo: /diska/open/56pfs/php_client/pfs_client.c
+	$(LIBTOOL) --mode=compile $(CC)  -I. -I/diska/open/56pfs/php_client $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /diska/open/56pfs/php_client/pfs_client.c -o pfs_client.lo 
 $(phplibdir)/pfs_client.la: ./pfs_client.la
 	$(LIBTOOL) --mode=install cp ./pfs_client.la $(phplibdir)
 

@@ -35,6 +35,9 @@ static void active_connect(char *ip)
 	if (fd < 0)
 	{
 		LOG(pfs_data_log, LOG_ERROR, "connect %s:%d err %m\n", ip, port);
+		char val[256] = {0x0};
+		snprintf(val, sizeof(val), "connect %s:%d err %m\n", ip, port);
+		SetStr(PFS_STR_CONNECT_E, val);
 		return;
 	}
 	if (svc_initconn(fd))
@@ -54,6 +57,7 @@ static void active_connect(char *ip)
 /*find 活动链接信息 */
 int find_ip_stat(uint32_t ip, pfs_cs_peer **dpeer, int mode, int status)
 {
+	LOG(pfs_data_log, LOG_DEBUG, "%s %d\n", FUNC, LN);
 	list_head_t *hashlist = &(online_list[ALLMASK&ip]);
 	pfs_cs_peer *peer = NULL;
 	list_head_t *l;
@@ -64,10 +68,12 @@ int find_ip_stat(uint32_t ip, pfs_cs_peer **dpeer, int mode, int status)
 			if (mode == peer->mode && status == peer->sock_stat)
 			{
 				*dpeer = peer;
+				LOG(pfs_data_log, LOG_DEBUG, "%s %d\n", FUNC, LN);
 				return 0;
 			}
 		}
 	}
+	LOG(pfs_data_log, LOG_DEBUG, "%s %d\n", FUNC, LN);
 	return -1;
 }
 
@@ -123,7 +129,7 @@ void check_task()
 			pfs_set_task(task, TASK_Q_FIN);  
 			continue;
 		}
-		if (check_localfile_md5(base, VIDEOFILE) == LOCALFILE_OK)
+		if (base->fsize > 0 && check_localfile_md5(base, VIDEOFILE) == LOCALFILE_OK)
 		{
 			LOG(pfs_data_log, LOG_DEBUG, "%s check md5 ok!\n", base->filename);
 			base->overstatus = OVER_OK;
@@ -132,7 +138,7 @@ void check_task()
 		}
 		pfs_cs_peer *peer = NULL;
 		find_ip_stat(str2ip(sub->peerip), &peer, CON_ACTIVE, IDLE);
-		if (sub->oper_type != OPER_GET_REQ)
+		if (sub->oper_type != OPER_GET_REQ && OPER_FROM_POSS != sub->oper_type)
 		{
 			LOG(pfs_data_log, LOG_ERROR, "%s:%d ERROR oper_type %d %s!\n", ID, LN, sub->oper_type, base->filename);
 			base->overstatus = OVER_E_TYPE;

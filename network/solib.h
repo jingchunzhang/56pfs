@@ -6,6 +6,7 @@
 #ifndef _VFS_SOLIB_H_
 #define _VFS_SOLIB_H_
 #include "global.h"
+typedef int (*proc_check) (int fd, ssize_t n, off_t end);
 typedef int (*proc_method) (int fd);
 typedef int (*proc_init) (void);
 typedef void (*proc_fini) (int fd);
@@ -19,6 +20,7 @@ struct mylib {
 	proc_method		svc_recv; //M	
 	proc_method		svc_send;  //M
 	proc_method		svc_send_once;  //O
+	proc_check		svc_check_send;  //O
 	proc_fini		svc_finiconn;//O	
 	proc_timeout	svc_timeout; //O
 };

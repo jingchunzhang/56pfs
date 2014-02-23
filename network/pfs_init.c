@@ -141,9 +141,13 @@ void reload_config()
 	g_config.max_task_run_once = myconfig_get_intval("max_task_run_once", 1024);
 	g_config.poss_interval = myconfig_get_intval("poss_interval", 300);
 	g_config.real_rm_time = myconfig_get_intval("real_rm_time", 7200);
+	g_config.sync_dir_span = myconfig_get_intval("sync_dir_span", 300);
+	g_config.check_task_timeout = myconfig_get_intval("check_task_timeout", 1);
 	g_config.pfs_test = myconfig_get_intval("pfs_test", 0);
 	g_config.task_timeout = myconfig_get_intval("task_timeout", 86400);
+	g_config.sync_dir_count = myconfig_get_intval("sync_dir_count", 20);
 	g_config.policy = myconfig_get_intval("task_policy", POLICY_DISKFREE)/POLICY_MAX;
+	g_config.timeout = myconfig_get_intval("timeout", 3);
 	LOG(glogfd, LOG_NORMAL, "task_timeout = %ld\n", g_config.task_timeout);
 }
 
@@ -154,7 +158,6 @@ int init_global()
 	g_config.sig_port = myconfig_get_intval("sig_port", 39090);
 	g_config.data_port = myconfig_get_intval("data_port", 49090);
 	g_config.up_port = myconfig_get_intval("up_port", 59090);
-	g_config.timeout = myconfig_get_intval("timeout", 300);
 	g_config.cktimeout = myconfig_get_intval("cktimeout", 5);
 	g_config.lock_timeout = myconfig_get_intval("lock_timeout", 10);
 	init_buff_size = myconfig_get_intval("socket_buff", 65536);
@@ -791,6 +794,10 @@ int get_domain(char *domain, t_pfs_domain *domains)
 	{
 		if (strcmp(domain, domains0->domain) == 0)
 		{
+			domains0->index++;
+			if (domains0->index >= domains0->ipcount)
+				domains0->index = 0;
+			LOG(glogfd, LOG_NORMAL, "domain %s index %d ipcount %d\n", domain, domains0->index, domains0->ipcount);
 			memcpy(domains, domains0, sizeof(t_pfs_domain));
 			return 0;
 		}

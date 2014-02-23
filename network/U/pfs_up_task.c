@@ -123,8 +123,24 @@ inline void get_local_bname(t_task_base *base)
 	base->filename[l] = 0x0;
 }
 
+static void do_query_other(int fd)
+{
+	t_pfs_tasklist task;
+	memset(&task, 0, sizeof(task));
+	int d1 = 0, d2 = 0;
+	get_max_free_storage(&d1, &d2);
+	snprintf(task.task.base.retfile, sizeof(task.task.base.retfile), "/%d/%d/", d1, d2);
+	create_push_rsp(&task, fd);
+}
+
 int do_push_task(int fd, t_pfs_sig_head *h, t_task_base *base)
 {
+	if (base->type == TASK_DELFILE && h->status == ADD_QUERY_DIR)
+	{
+		LOG(pfs_up_log, LOG_NORMAL, "ADD_QUERY_DIR REQ!\n");
+		do_query_other(fd);
+		return RECV_ADD_EPOLLOUT;
+	}
 	struct conn *curcon = &acon[fd];
 	pfs_cs_peer *peer = (pfs_cs_peer *) curcon->user;
 	peer->sock_stat = PREPARE_RECVFILE;
@@ -145,22 +161,26 @@ int do_push_task(int fd, t_pfs_sig_head *h, t_task_base *base)
 			LOG(pfs_up_log, LOG_NORMAL, "filename[%s] do_push_task path by upload!\n", base->filename);
 	}
 	else
-		LOG(pfs_up_log, LOG_NORMAL, "filename[%s] be delete!\n", base->filename);
+		LOG(pfs_up_log, LOG_NORMAL, "[%u] filename[%s] be delete!\n", peer->ip, base->filename);
 	memset(&(task->task), 0, sizeof(task->task)); 
 	t_task_sub *sub = &(task->task.sub);
 	memset(sub, 0, sizeof(t_task_sub));
 	ip2str(sub->peerip, peer->ip);
 	sub->processlen = base->fsize;
 	sub->starttime = time(NULL);
-	sub->oper_type = OPER_PUT_REQ;
+	sub->oper_type = OPER_UP_REQ;	// pfs's upload req
 	sub->need_sync = TASK_SOURCE;
 
 	t_task_base *base0 = &(task->task.base);
 	memcpy(base0, base, sizeof(t_task_base));
 	base0->starttime = time(NULL);
+	base0->dstip = peer->ip;	// client's ip, report to POSS
 	peer->recvtask = task;
 	if (base->type == TASK_DELFILE)
 	{
+		base0->mtime = base0->starttime;
+		base->mtime = base0->starttime;
+
 		delete_localfile(base);
 		base0->overstatus = OVER_OK;
 		pfs_set_task(peer->recvtask, TASK_Q_FIN);
@@ -170,6 +190,7 @@ int do_push_task(int fd, t_pfs_sig_head *h, t_task_base *base)
 	}
 	if (peer->local_in_fd > 0)
 		close(peer->local_in_fd);
+	/*
 	if (ADD_PATH_BY_BNAME != h->status && check_localfile_md5(base0, VIDEOFILE) == LOCALFILE_OK)
 	{
 		LOG(pfs_up_log, LOG_NORMAL, "fd[%d] file [%s] md5 ok\n", fd, base0->filename);
@@ -179,6 +200,7 @@ int do_push_task(int fd, t_pfs_sig_head *h, t_task_base *base)
 		create_push_rsp_err("remote file exist", fd);
 		return RECV_SEND;
 	}
+	*/
 	if (open_tmp_localfile_4_write(base0, &(peer->local_in_fd)) != LOCALFILE_OK) 
 	{
 		LOG(pfs_up_log, LOG_ERROR, "fd[%d] file [%s] open file err %m\n", fd, base->filename);

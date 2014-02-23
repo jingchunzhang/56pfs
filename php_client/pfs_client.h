@@ -34,5 +34,6 @@ extern zend_module_entry pfs_client_module_entry;
 PHP_FUNCTION(pfs_remove_file);
 PHP_FUNCTION(pfs_add_file);
 PHP_FUNCTION(pfs_modify_file);
+PHP_FUNCTION(pfs_query_other);
 
 #endif /* PHP_PHPCLIENT_H */

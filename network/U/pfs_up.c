@@ -151,7 +151,7 @@ recvfileing:
 		{
 			LOG(pfs_up_log, LOG_ERROR, "fd[%d] write error %m close it!\n", fd);
 			snprintf(val, sizeof(val), "write err %m");
-			if (task0->task.sub.oper_type == OPER_PUT_REQ)
+			if (task0->task.sub.oper_type == OPER_UP_REQ)
 				create_push_rsp_err(val, fd);
 			return RECV_ADD_EPOLLOUT;
 		}
@@ -169,7 +169,7 @@ recvfileing:
 				peer->recvtask = NULL;
 				pfs_set_task(task0, TASK_Q_FIN);
 				snprintf(val, sizeof(val), "md5 error %m");
-				if (task0->task.sub.oper_type == OPER_PUT_REQ)
+				if (task0->task.sub.oper_type == OPER_UP_REQ)
 					create_push_rsp_err(val, fd);
 				return RECV_SEND;
 			}
@@ -177,7 +177,7 @@ recvfileing:
 			{
 				LOG(pfs_up_log, LOG_NORMAL, "fd[%d:%u] get file %s ok!\n", fd, peer->ip, task->base.filename);
 				task0->task.base.overstatus = OVER_OK;
-				if (task0->task.sub.oper_type == OPER_PUT_REQ)
+				if (task0->task.sub.oper_type == OPER_UP_REQ)
 					create_push_rsp(task0, fd);
 				pfs_set_task(task0, TASK_Q_FIN);
 			}
@@ -264,9 +264,9 @@ void svc_finiconn(int fd)
 	{
 		tasklist = peer->recvtask;
 		LOG(pfs_up_log, LOG_ERROR, "re execute %s!\n", tasklist->task.base.filename);
+		tasklist->task.base.overstatus = OVER_UP_ERR;
 		real_rm_file(tasklist->task.base.tmpfile);
-		tasklist->task.base.retry++;
-		pfs_set_task(tasklist, TASK_Q_WAIT);
+		pfs_set_task(tasklist, TASK_Q_FIN);
 	}
 	memset(curcon->user, 0, sizeof(pfs_cs_peer));
 	free(curcon->user);

@@ -44,7 +44,7 @@ available_tags=""
 
 # ### BEGIN LIBTOOL CONFIG
 
-# Libtool was configured on host log83.r.56.com:
+# Libtool was configured on host YFXINX81-32-DX-APP.opi.com.:
 
 # Shell to use when invoking shell scripts.
 SHELL="/bin/sh"
@@ -94,7 +94,7 @@ CC="cc"
 with_gcc=yes
 
 # An ERE matcher.
-EGREP="grep -E"
+EGREP="/bin/grep -E"
 
 # The linker used to build libraries.
 LD="/usr/bin/ld -m elf_x86_64"
@@ -332,7 +332,7 @@ link_all_deplibs=unknown
 sys_lib_search_path_spec="/usr/lib/gcc/x86_64-redhat-linux/4.1.2 /usr/lib64 /lib64"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/local/lib /home/mysql/lib/mysql "
+sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/lib/mysql /usr/lib64/mysql /usr/local/lib /home/mysql/lib/mysql /diska/sys_dev/systemtap/lib/systemtap "
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""

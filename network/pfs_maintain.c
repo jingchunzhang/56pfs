@@ -28,7 +28,7 @@ extern time_t pfs_start_time;  /*pfs Æô¶¯Ê±¼ä*/
 
 static char *cmd_type[] = {"M_ONLINE", "M_OFFLINE", "M_GETINFO", "M_SYNCDIR", "M_SYNCFILE", "M_CONFUPDA", "M_SETDIRTIME", "M_GETDIRTIME", "M_ADD_MOD_GROUP", "M_DEL_GROUP"};
 
-static char *validcmd[] = {"cs_preday", "fcs_max_connects", "max_data_connects", "max_task_run_once", "pfs_test", "real_rm_time", "task_timeout", "fcs_max_task", "cs_sync_dir", "data_calcu_md5"};
+static char *validcmd[] = {"cs_preday", "fcs_max_connects", "max_data_connects", "max_task_run_once", "pfs_test", "real_rm_time", "task_timeout", "fcs_max_task", "cs_sync_dir", "data_calcu_md5", "sync_dir_count", "timeout"};
 #define validsize sizeof(validcmd)/sizeof(char*)
 
 static int isvalid(char *key)
@@ -149,7 +149,7 @@ int get_dirtime(char *buf, int len)
 	return get_dirtime(buf, len);
 }
 
-int do_poss_sync_file(char *domain, char *file, char *sip)
+int do_poss_sync_file(char *file, char *sip)
 {
 	t_pfs_tasklist *task = NULL;
 	if (pfs_get_task(&task, TASK_Q_HOME))
@@ -164,20 +164,11 @@ int do_poss_sync_file(char *domain, char *file, char *sip)
 	snprintf(base->filename, sizeof(base->filename), "%s", file);
 	base->starttime = time(NULL);
 	base->type = TASK_ADDFILE;
-	sub->oper_type = OPER_GET_REQ;
+	base->dstip = self_ip;
+	sub->oper_type = OPER_FROM_POSS;
 	sub->need_sync = TASK_SYNC_VOSS_FILE;
-	if (sip)
-		snprintf(sub->peerip, sizeof(sub->peerip), "%s", sip);
-	else
-	{
-		if (get_ip_by_domain(sub->peerip, domain))
-		{
-			LOG(pfs_agent_log, LOG_ERROR, "get_ip_by_domain err %s\n", domain);
-			pfs_set_task(task, TASK_Q_HOME);
-			return -1;
-		}
-	}
-	pfs_set_task(task, TASK_Q_SYNC_POSS);
+	snprintf(sub->peerip, sizeof(sub->peerip), "%s", sip);
+	pfs_set_task(task, TASK_Q_WAIT);
 	return 0;
 }
 
@@ -203,12 +194,39 @@ int do_poss_sync_dir(char *domain, char *file, time_t starttime)
 
 int poss_sync_file(StringPairList *pairlist, char *buf, int len)
 {
-	return 0;
+	char *p;
+	int i = 0;
+	int n = 0;
+	int ol = 0;
+    for (i = 0; i < pairlist->iLast; i++ )
+	{
+		char *key = pairlist->pStrPairList[i].sFirst;
+		char *val = pairlist->pStrPairList[i].sSecond;
+		if(strcasecmp(key, "pfs_cmd") == 0)
+			continue;
+		p = pairlist->pStrPairList[i].sSecond;
+		n = strlen(pairlist->pStrPairList[i].sSecond);
+		while(--n)
+		{
+			if(*p == '\r' || *p == '\n')
+			{
+				*p = 0;
+				break;
+			}
+			p++;
+		}
+		LOG(pfs_agent_log, LOG_NORMAL, "%s=%s\n", key, val);
+		if (do_poss_sync_file(key, val))
+		{
+			if (ol < len)
+				ol += snprintf(buf + ol, len - ol, "sync %s %s err %m", key, val);
+		}
+	}
+	return ol;
 }
 
 int poss_sync_dir(StringPairList *pairlist, char *buf, int len)
 {
-
 	char *p;
 	int i = 0;
 	int n = 0;

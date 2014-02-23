@@ -8,6 +8,7 @@
  */
 #include "pfs_file_filter.h"
 volatile extern int maintain ;		//1-维护配置 0 -可以使用
+volatile extern int init_sync_flag;
 extern t_pfs_nameserver pfs_nameserver[MAX_NAMESERVER];
 extern t_pfs_domain *self_domain;
 
@@ -49,6 +50,11 @@ static void do_sync_dir_req_sub(t_task_base *sbase)
 				LOG(pfs_sig_log_err, LOG_ERROR, "stat error,filename:%s\n", file);
 				continue;
 			}
+			if (filestat.st_size == 0)
+			{
+				LOG(pfs_sig_log_err, LOG_ERROR, "filename:%s size = 0\n", file);
+				continue;
+			}
 			if (!S_ISREG(filestat.st_mode))
 				continue;
 			if (task->starttime && filestat.st_ctime < task->starttime)
@@ -88,6 +94,7 @@ static void do_sync_dir_req_sub(t_task_base *sbase)
 			ip2str(stask->task.sub.peerip, sbase->dstip);
 			memcpy(&(stask->task.base), &base, sizeof(t_task_base));
 			pfs_set_task(stask, TASK_Q_WAIT_SYNC_DIR);  
+			LOG(pfs_sig_log, LOG_NORMAL, "filename:%s prepare dispatch\n", file);
 		}
 		closedir(dp);
 		sbase->overstatus = OVER_OK;
@@ -104,6 +111,9 @@ static void active_connect(char *ip)
 	if (fd < 0)
 	{
 		LOG(pfs_sig_log_err, LOG_ERROR, "connect %s:%d err %m\n", ip, port);
+		char val[256] = {0x0};
+		snprintf(val, sizeof(val), "connect %s:%d err %m\n", ip, port);
+		SetStr(PFS_STR_CONNECT_E, val);
 		return;
 	}
 	if (svc_initconn(fd))
@@ -130,6 +140,26 @@ int find_ip_stat(uint32_t ip, pfs_cs_peer **dpeer)
 			*dpeer = peer;
 			return 0;
 		}
+	}
+	return -1;
+}
+
+static int check_count_one_day()
+{
+	static time_t last = 0;
+	static int count = 0;
+	if (last == 0)
+		last = time(NULL);
+	if (count < g_config.sync_dir_count)
+	{
+		count++;
+		return 0;
+	}
+	if (time(NULL) - last >= 86400)
+	{
+		last = time(NULL);
+		count = 1;
+		return 0;
 	}
 	return -1;
 }
@@ -179,6 +209,15 @@ static void do_sub_sync(t_pfs_sync_list *pfs_sync, pfs_cs_peer *peer)
 
 static void do_active_sync()
 {
+	if (init_sync_flag == 0)
+		return;
+	if (check_count_one_day())
+		return;
+	static time_t last_sync = 0;
+	time_t now = time(NULL);
+	if (now - last_sync < g_config.sync_dir_span)
+		return;
+
 	int run_sync_dir_count = get_task_count(TASK_Q_SYNC_DIR) + get_task_count(TASK_Q_SYNC_DIR_TMP);
 	if (run_sync_dir_count >= 1024)
 	{
@@ -194,6 +233,7 @@ static void do_active_sync()
 		LOG(pfs_sig_log, LOG_DEBUG, "cur time %s not between %s %s, can not sync dir\n", hour, g_config.sync_stime, g_config.sync_etime);
 		return;
 	}
+	last_sync = now;
 	t_pfs_sync_list *pfs_sync = NULL;
 	list_head_t *l;
 	int get = 0;
@@ -243,8 +283,7 @@ static int init_sync_list()
 		{
 			time_t last = get_time_stamp_by_int(d1, d2) - g_config.task_timeout;
 			if (last <= 0)
-				last = 0;
-				//last = get_storage_dir_lasttime(d1, d2);
+				last = get_storage_dir_lasttime(d1, d2);
 			pfs_sync = malloc(sizeof(t_pfs_sync_list));
 			if (pfs_sync == NULL)
 			{
@@ -259,7 +298,7 @@ static int init_sync_list()
 			pfs_sync->sync_task.d2 = d2;
 			pfs_sync->sync_task.type = TASK_ADDFILE;
 			LOG(pfs_sig_log, LOG_NORMAL, "gen sync task %d %d %ld %s\n", d1, d2, last, ctime(&last));
-			list_add(&(pfs_sync->list), &sync_list);
+			list_add_tail(&(pfs_sync->list), &sync_list);
 		}
 	}
 	return 0;

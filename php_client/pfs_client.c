@@ -64,6 +64,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pfs_add_file, 0, 0, 4)
 	ZEND_ARG_INFO(0, flag)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pfs_query_other, 0, 0, 3)
+	ZEND_ARG_INFO(0, serverport)
+	ZEND_ARG_INFO(0, group)
+	ZEND_ARG_INFO(0, flag)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pfs_modify_file, 0, 0, 4)
 	ZEND_ARG_INFO(0, server)
 	ZEND_ARG_INFO(0, domain)
@@ -77,6 +83,7 @@ ZEND_END_ARG_INFO()
 static const zend_function_entry pfs_client_functions[] = {
 	PHP_FE(pfs_remove_file,	arginfo_pfs_remove_file)
 	PHP_FE(pfs_add_file,	arginfo_pfs_add_file)
+	PHP_FE(pfs_query_other,	arginfo_pfs_query_other)
 	PHP_FE(pfs_modify_file,	arginfo_pfs_modify_file)
 	{NULL, NULL, NULL}  /* Must be the last line */
 };
@@ -93,7 +100,7 @@ zend_module_entry pfs_client_module_entry = {
 	NULL,
 	NULL,
 	PHP_MINFO(pfs_client),
-	NO_VERSION_YET,
+	"1.0",
 	STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
@@ -193,6 +200,7 @@ PHP_FUNCTION(pfs_add_file)
 		api.addtype = ADD_PATH_BY_BNAME;
 		api.nametype = ADD_SET_DOMAIN;
 	}
+
 	snprintf(api.localfile, sizeof(api.localfile), "%s", file);
 	snprintf(api.group, sizeof(api.group), "%s", group);
 	int ret = operate_pfs(ip, port, &api);
@@ -208,6 +216,60 @@ PHP_FUNCTION(pfs_add_file)
 		add_assoc_stringl_ex(return_value, "errmsg", sizeof("errmsg"), api.errmsg, strlen(api.errmsg), 1);
 		if (ret >= 0 && ret <= PFS_STORAGE_FILE)
 			add_assoc_stringl_ex(return_value, "retmsg", sizeof("retmsg"), pfserrmsg[ret], strlen(pfserrmsg[ret]), 1);
+	}
+}
+
+PHP_FUNCTION(pfs_query_other)
+{
+	char *server;
+	long server_len;
+
+	char *group;
+	long group_len;
+
+	long flag = 0;
+
+	array_init(return_value);
+	char *errmsg[] = {"OK", "zend_parse_parameters ERR", "domain err:unknown host", "flag range err"};
+	if (SUCCESS != zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &server, &server_len, &group, &group_len, &flag))
+	{
+		add_assoc_long_ex(return_value, "retcode", sizeof("retcode"), 1);
+		add_assoc_stringl_ex(return_value, "retmsg", sizeof("retmsg"), errmsg[1], strlen(errmsg[1]), 1);
+		return;
+	}
+	int port = DEFAULT_UP_PORT;
+	char ip[16] = {0x0};
+	if (get_ip_port(server, ip, &port))
+	{
+		add_assoc_long_ex(return_value, "retcode", sizeof("retcode"), 2);
+		add_assoc_stringl_ex(return_value, "retmsg", sizeof("retmsg"), errmsg[2], strlen(errmsg[2]), 1);
+		return;
+	}
+
+	if (flag < ADD_QUERY_DIR)
+	{
+		add_assoc_long_ex(return_value, "retcode", sizeof("retcode"), 3);
+		add_assoc_stringl_ex(return_value, "retmsg", sizeof("retmsg"), errmsg[3], strlen(errmsg[3]), 1);
+		return;
+	}
+	t_api_info api;
+	memset(&api, 0, sizeof(api));
+	api.type = TASK_DELFILE;
+	api.addtype = flag;
+
+	snprintf(api.remotefile, sizeof(api.remotefile), "blank");
+	snprintf(api.group, sizeof(api.group), "%s", group);
+	int ret = operate_pfs(ip, port, &api);
+	if (ret == PFS_OK)
+	{
+		add_assoc_long_ex(return_value, "retcode", sizeof("retcode"), ret);
+		add_assoc_stringl_ex(return_value, "domain", sizeof("domain"), api.group, strlen(api.group), 1);
+		add_assoc_stringl_ex(return_value, "remotedir", sizeof("remotedir"), api.remotefile, strlen(api.remotefile), 1);
+	}
+	else
+	{
+		add_assoc_long_ex(return_value, "retcode", sizeof("retcode"), ret);
+		add_assoc_stringl_ex(return_value, "errmsg", sizeof("errmsg"), api.errmsg, strlen(api.errmsg), 1);
 	}
 }
 
@@ -247,7 +309,7 @@ PHP_FUNCTION(pfs_modify_file)
 	snprintf(api.localfile, sizeof(api.localfile), "%s", file);
 	snprintf(api.remotefile, sizeof(api.remotefile), "%s", rfile);
 	snprintf(api.group, sizeof(api.group), "%s", group);
-	int ret = operate_pfs(server, port, &api);
+	int ret = operate_pfs(ip, port, &api);
 	if (ret == PFS_OK)
 	{
 		add_assoc_long_ex(return_value, "retcode", sizeof("retcode"), ret);

@@ -230,6 +230,30 @@ int svc_send_once(int fd)
 	return SEND_ADD_EPOLLIN;
 }
 
+int svc_check_send(int fd, ssize_t n, off_t end)
+{
+	struct conn *curcon = &acon[fd];
+	pfs_cs_peer *peer = (pfs_cs_peer *) curcon->user;
+	if (peer->sendtask == NULL)
+	{
+		LOG(pfs_data_log, LOG_ERROR, "fd[%d:%u] %s %s %d!\n", fd, peer->ip, ID, FUNC, LN);
+		return -1;
+	}
+	t_task_base *base = &(peer->sendtask->task.base);
+	struct stat filestat;
+	if (stat(base->filename, &filestat))
+	{
+		LOG(pfs_data_log, LOG_ERROR, "stat file %s err %m!\n", base->filename);
+		return -1;
+	}
+	if (filestat.st_size != base->fsize)
+	{
+		LOG(pfs_data_log, LOG_ERROR, "fd[%d:%u] %s %s %d %s %ld %ld %ld\n", fd, peer->ip, ID, FUNC, LN, base->filename, base->fsize, n, filestat.st_size);
+		return -1;
+	}
+	return 0;
+}
+
 int svc_send(int fd)
 {
 	struct conn *curcon = &acon[fd];

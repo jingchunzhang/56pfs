@@ -10,6 +10,9 @@ int get_valid_ip_4_up(t_pfs_domain *domains, char *sip)
 {
 	if (domains->index >= domains->ipcount)
 		domains->index = 0;
+	int type = get_type_by_name(domains->domain);
+	if (type == 1)
+		domains->index = 0;
 	int j;
 	int l = 0;
 	pfs_fcs_peer *peer;
@@ -24,7 +27,7 @@ int get_valid_ip_4_up(t_pfs_domain *domains, char *sip)
 		sip[l] = 0x0;
 		break;
 	}
-	if (j != domains->index)
+	if ((type != 1) && (j != domains->index))
 	{
 		if (find_ip_stat(domains->ips[domains->index], &peer))
 			LOG(pfs_sig_log, LOG_ERROR, "ip [%s] not online\n", domains->sips[domains->index]);
@@ -34,7 +37,8 @@ int get_valid_ip_4_up(t_pfs_domain *domains, char *sip)
 			sip[l] = 0x0;
 		}
 	}
-	domains->index++;
+	if (type != 1)
+		domains->index++;
 	if (strlen(sip) == 0)
 		return -1;
 	LOG(pfs_sig_log, LOG_NORMAL, "domain [%s] ip [%s] be select\n", domains->domain, sip);
@@ -54,6 +58,15 @@ int get_dstip_group(char *buf, char *group, uint8_t type)
 			memset(&domains0, 0, sizeof(domains0));
 			if (get_domain(group, &domains0) == 0)
 				domains = &domains0;
+			else 
+			{
+				char *newdomain = get_newname_by_oldname(group);
+				if (newdomain && get_domain(newdomain, &domains0) == 0)
+				{
+					LOG(pfs_sig_log, LOG_NORMAL, "get newdomain ok %s old is %s\n", newdomain, group);
+					domains = &domains0;
+				}
+			}
 		}
 		if (domains == NULL)
 		{
@@ -77,8 +90,14 @@ int get_dstip_group_modi_del(char *buf, char *domain)
 	{
 		if (get_domain(domain, &domains))
 		{
-			LOG(pfs_sig_log, LOG_ERROR, "get_dstip_group_modi_del err %s!\n", domain); 
-			return sprintf(buf, "domain '%s' not found", domain);
+			char *newdomain = get_newname_by_oldname(domain);
+			if (newdomain && get_domain(newdomain, &domains) == 0)
+				LOG(pfs_sig_log, LOG_NORMAL, "get newdomain ok %s old is %s\n", newdomain, domain);
+			else
+			{
+				LOG(pfs_sig_log, LOG_ERROR, "get_dstip_group_modi_del err %s!\n", domain); 
+				return sprintf(buf, "domain '%s' not found", domain);
+			}
 		}
 		char sip[16] = {0x0};
 		if (get_valid_ip_4_up(&domains, sip))
@@ -101,6 +120,35 @@ int active_send(pfs_fcs_peer *peer, t_pfs_sig_head *h, t_pfs_sig_body *b)
 	return 0;
 }
 
+static int check_proxy_ip(int fd, uint32_t ip, uint8_t cmdid, uint8_t status)
+{
+	int idx = 0;
+	while (idx < 16)
+	{
+		if (proxy_ip[idx] == 0)
+			break;
+		if (proxy_ip[idx] == ip)
+		{
+			LOG(pfs_sig_log, LOG_NORMAL, "proxy ip %u\n", ip);
+			t_pfs_sig_body ob;
+			memset(&ob, 0, sizeof(ob));
+			int bodylen = snprintf(ob.body, sizeof(ob.body), "%s:%d", proxy_sip[idx], g_config.up_port);
+
+			char obuf[2048] = {0x0};
+			int n = 0;
+			if (cmdid == UPLOAD_REQ)
+				n = create_sig_msg(UPLOAD_RSP, status, &ob, obuf, bodylen);
+			else
+				n = create_sig_msg(MODI_DEL_RSP, status, &ob, obuf, bodylen);
+			set_client_data(fd, obuf, n);
+			modify_fd_event(fd, EPOLLOUT);
+			return -1;
+		}
+		idx++;
+	}
+	return 0;
+}
+
 static int do_req(int fd, t_pfs_sig_head *h, t_pfs_sig_body *b)
 {
 	struct conn *curcon = &acon[fd];
@@ -110,6 +158,12 @@ static int do_req(int fd, t_pfs_sig_head *h, t_pfs_sig_body *b)
 	memset(&ob, 0, sizeof(ob));
 	int bodylen = 0;
 	pfs_fcs_peer *peer = (pfs_fcs_peer *) curcon->user;
+	if (check_proxy_ip(fd, peer->ip, h->cmdid, h->status))
+	{
+		peer->close = 1;
+		return RECV_SEND;
+	}
+
 	peer->hbtime = time(NULL);
 
 	switch(h->cmdid)
@@ -136,9 +190,18 @@ static int do_req(int fd, t_pfs_sig_head *h, t_pfs_sig_body *b)
 			return RECV_SEND;
 
 		case MODI_DEL_REQ:
-			LOG(pfs_sig_log, LOG_NORMAL, "fd [%d] MODI_DEL_REQ!\n", fd);
-			bodylen = get_dstip_group_modi_del(ob.body, b->body);
-			n = create_sig_msg(MODI_DEL_RSP, h->status, &ob, obuf, bodylen);
+			if (h->status == ADD_QUERY_DIR)
+			{
+				LOG(pfs_sig_log, LOG_NORMAL, "fd [%d] ADD_QUERY_DIR!\n", fd);
+				bodylen = get_dstip_group(ob.body, b->body, ADD_SET_GROUP);
+				n = create_sig_msg(MODI_DEL_RSP, h->status, &ob, obuf, bodylen);
+			}
+			else
+			{
+				LOG(pfs_sig_log, LOG_NORMAL, "fd [%d] MODI_DEL_REQ!\n", fd);
+				bodylen = get_dstip_group_modi_del(ob.body, b->body);
+				n = create_sig_msg(MODI_DEL_RSP, h->status, &ob, obuf, bodylen);
+			}
 			set_client_data(fd, obuf, n);
 			modify_fd_event(fd, EPOLLOUT);
 			peer->close = 1;

@@ -49,8 +49,7 @@ static void do_fin_task()
 		if (task->task.user)
 		{
 			LOG(pfs_sig_log, LOG_DEBUG, "%s:%d:%d\n", ID, LN, task->task.sub.oper_type);
-			t_tmp_status *tmp = task->task.user;
-			set_tmp_blank(tmp->pos, tmp);
+		//	set_tmp_blank(tmp->pos, tmp);
 			task->task.user = NULL;
 		}
 		pfs_set_task(task, TASK_Q_CLEAN);
@@ -159,8 +158,7 @@ static void check_task()
 		do_dispatch_task(sip, task, peer, status);
 		if (task->task.user)
 		{
-			t_tmp_status *tmp = task->task.user;
-			set_tmp_blank(tmp->pos, tmp);
+		//	set_tmp_blank(tmp->pos, tmp);
 			task->task.user = NULL;
 		}
 		pfs_set_task(task, TASK_Q_HOME);  /*同步信令 不作为任务上报*/
@@ -313,7 +311,7 @@ static int do_req(int fd, t_pfs_sig_head *h, t_pfs_sig_body *b)
 			LOG(pfs_sig_log, LOG_NORMAL, "fd[%d] recv a SYNC_DIR_RSP\n", fd);
 			if (peer->pfs_sync_list)
 			{
-				free(peer->pfs_sync_list);
+		//		free(peer->pfs_sync_list); // in xinxing storerage can core
 				peer->pfs_sync_list = NULL;
 			}
 			sync_para.flag = 0;
@@ -333,7 +331,7 @@ static int do_req(int fd, t_pfs_sig_head *h, t_pfs_sig_body *b)
 			LOG(pfs_sig_log, LOG_DEBUG, "fd[%d] recv a SYNC_DEL_RSP\n", fd);
 			if (peer->pfs_sync_list)
 			{
-				free(peer->pfs_sync_list);
+			//	free(peer->pfs_sync_list);
 				peer->pfs_sync_list = NULL;
 			}
 			sync_para.flag = 0;

@@ -2,7 +2,7 @@ CC=gcc
 CXX=g++
 INC+= 
 LIB+= -lpthread -ldl -lrt -rdynamic -L../lib -lpfs 
-TARGET=test_upload_file test_del_file test_upload_file_set_path test_upload_file_set_path_by_dir pictool test_del_file_by_dir test_upload_file_set_group test_mod_file test_upload_file_set_path_by_dir_set_group imgtool test_upload_file_bname
+TARGET=test_upload_file test_del_file test_upload_file_set_path test_upload_file_set_path_by_dir pictool test_del_file_by_dir test_upload_file_set_group test_mod_file imgtool test_upload_file_bname
 ALL:$(TARGET)
 
 CFLAGS+= -g -O2 -pipe -Wall -fno-strict-aliasing -D_GNU_SOURCE -D_REENTRANT  -I../lib -I../3rdlib

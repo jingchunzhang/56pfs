@@ -26,7 +26,9 @@
 #define SOCK_DATA_OVER 0x02  /* client send data ok*/
 #define SOCK_CLOSE 0x10 /* peer close or active close */
 #define SOCK_SEND  0x20 /* more data need send at next loop */
+#define SOCK_SELECT_ERR 0x30 /* select error */
 #define SOCK_COMP  0x40 /*socker data send over */
+#define SOCK_SELECT_TO 0x60 /* select time out*/
 #define SOCK_RECV  0x80 /*socker recv some data */
 #define GSIZE 1073741824    /*sendfile max send once*/
 
@@ -184,7 +186,7 @@ static int create_req_msg(struct mybuff *send_buff, struct mybuff *recv_buff, t_
 		if (api->type == TASK_ADDFILE)
 			n = create_sig_msg(UPLOAD_REQ, api->nametype, &ob, obuf, bodylen);
 		else
-			n = create_sig_msg(MODI_DEL_REQ, FILE_PUSH_REQ_STAT, &ob, obuf, bodylen);
+			n = create_sig_msg(MODI_DEL_REQ, api->addtype, &ob, obuf, bodylen);
 		mybuff_setdata(send_buff, obuf, n);
 		return 0;
 	}
@@ -197,6 +199,8 @@ static int create_req_msg(struct mybuff *send_buff, struct mybuff *recv_buff, t_
 	{
 		snprintf(base.filename, sizeof(base.filename), "%s", api->localfile);
 		if (get_localfile_stat(&base))
+			return -1;
+		if (base.fsize == 0)
 			return -1;
 		if (base.type == TASK_MODYFILE)
 		{
@@ -317,18 +321,20 @@ static int upload_file_inter(char *nameip, int nameport, t_api_info *api)
 		FD_SET( fd, &rfds );
 		if (havedata)
 			FD_SET( fd, &wfds );
-		tv.tv_sec = 0;
-		tv.tv_usec = 500000;
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
 
 		ret = select( fd + 1, &rfds, &wfds, NULL, &tv);
 		if (ret  == -1)
 		{
 			fprintf(stderr, "select %d err %m\n", fd);
+			ret = SOCK_SELECT_ERR;
 			break;
 		}
 
 		if (ret == 0)
 		{
+			ret = SOCK_SELECT_TO;
 			snprintf(api->errmsg, sizeof(api->errmsg), "time out %d!", client_stat);
 			break;
 		}

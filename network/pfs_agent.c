@@ -25,6 +25,7 @@
  *临时文件只存放任务信息，不存放协议报文头，在扫描临时目录时，如果有文件可用，需要设置协议头数据到发送缓冲区
  */
 
+extern t_pfs_domain *self_domain;
 extern atomic_t taskcount[TASK_Q_UNKNOWN];
 #define MAXTMPFILE 10240
 #define PREFIX  "poss_"
@@ -53,10 +54,13 @@ void get_data_from_task(t_pfs_tasklist *task)
 	char ip[16] = {0x0};
 	ip2str(ip, base->dstip);
 	time_t cur = time(NULL);
+	/*
 	if (cur - base->starttime > g_config.task_timeout)
 		base->overstatus = OVER_TIMEOUT;
+		*/
 
-	size_t n = snprintf(buf, sizeof(buf), "%s:%s:%c:%s:%s:%ld:%ld:%ld\n", base->filename, ip, base->type, task_status[task->status], over_status[base->overstatus], base->starttime, cur, base->fsize);
+	t_task_sub *sub = &(task->task.sub);
+	size_t n = snprintf(buf, sizeof(buf), "%s:%s:%c:%s:%s:%ld:%ld:%ld:%d:%s\n", base->filename, ip, base->type, task_status[task->status], over_status[base->overstatus], base->starttime, cur, base->fsize, sub->oper_type, self_domain->domain);
 	mybuff_setdata(&databuff, buf, n);
 
 	LOG(pfs_agent_log, LOG_DEBUG, "move task [%s:%s] to home\n", base->filename, over_status[base->overstatus]);
@@ -496,6 +500,9 @@ static void do_run(struct threadstat *thst)
 	if (fd < 0)
 	{
 		LOG(pfs_agent_log, LOG_ERROR, "create socket err %s:%d %m\n", serverip, serverport);
+		char val[256] = {0x0};
+		snprintf(val, sizeof(val), "connect %s:%d err %m\n", serverip, serverport);
+		SetStr(PFS_STR_CONNECT_E, val);
 	}
 	else
 		LOG(pfs_agent_log, LOG_DEBUG, "create socket ok fd [%d] %s:%d \n", fd, serverip, serverport);

@@ -1,17 +1,17 @@
-srcdir = /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client
-builddir = /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client
-top_srcdir = /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client
-top_builddir = /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client
-EGREP = grep -E
+srcdir = /diska/open/56pfs/php_client
+builddir = /diska/open/56pfs/php_client
+top_srcdir = /diska/open/56pfs/php_client
+top_builddir = /diska/open/56pfs/php_client
+EGREP = /bin/grep -E
 SED = /bin/sed
-CONFIGURE_COMMAND = './configure' '--with-php-config=/home/php/bin/php-config'
-CONFIGURE_OPTIONS = '--with-php-config=/home/php/bin/php-config'
+CONFIGURE_COMMAND = './configure'
+CONFIGURE_OPTIONS =
 SHLIB_SUFFIX_NAME = so
 SHLIB_DL_SUFFIX_NAME = so
 ZEND_EXT_TYPE = zend_extension
 RE2C = exit 0;
 AWK = gawk
-PFS_CLIENT_SHARED_LIBADD = -Wl,-rpath,/home/jingchun.zhang/svn/sys_dev/56pfs/code/lib -L/home/jingchun.zhang/svn/sys_dev/56pfs/code/lib -lpfs
+PFS_CLIENT_SHARED_LIBADD = -Wl,-rpath,/diska/open/56pfs/lib -L/diska/open/56pfs/lib -lpfs
 shared_objects_pfs_client = pfs_client.lo
 PHP_PECL_EXTENSION = pfs_client
 PHP_MODULES = $(phplibdir)/pfs_client.la
@@ -22,7 +22,7 @@ prefix = /home/php
 exec_prefix = $(prefix)
 libdir = ${exec_prefix}/lib
 prefix = /home/php
-phplibdir = /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client/modules
+phplibdir = /diska/open/56pfs/php_client/modules
 phpincludedir = /home/php/include/php
 CC = cc
 CFLAGS = -g -O2
@@ -36,7 +36,7 @@ EXTENSION_DIR = /home/php/lib/php/extensions/no-debug-non-zts-20060613
 PHP_EXECUTABLE = /home/php/bin/php
 EXTRA_LDFLAGS =
 EXTRA_LIBS =
-INCLUDES = -I/home/php/include/php -I/home/php/include/php/main -I/home/php/include/php/TSRM -I/home/php/include/php/Zend -I/home/php/include/php/ext -I/home/php/include/php/ext/date/lib -I/home/jingchun.zhang/svn/sys_dev/56pfs/code/lib
+INCLUDES = -I/home/php/include/php -I/home/php/include/php/main -I/home/php/include/php/TSRM -I/home/php/include/php/Zend -I/home/php/include/php/ext -I/home/php/include/php/ext/date/lib -I/diska/open/56pfs/lib
 LFLAGS =
 LDFLAGS =
 SHARED_LIBTOOL =
@@ -160,8 +160,8 @@ distclean: clean
 
 .PHONY: all clean install distclean test
 .NOEXPORT:
-pfs_client.lo: /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client/pfs_client.c
-	$(LIBTOOL) --mode=compile $(CC)  -I. -I/home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /home/jingchun.zhang/svn/sys_dev/56pfs/code/php_client/pfs_client.c -o pfs_client.lo 
+pfs_client.lo: /diska/open/56pfs/php_client/pfs_client.c
+	$(LIBTOOL) --mode=compile $(CC)  -I. -I/diska/open/56pfs/php_client $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /diska/open/56pfs/php_client/pfs_client.c -o pfs_client.lo 
 $(phplibdir)/pfs_client.la: ./pfs_client.la
 	$(LIBTOOL) --mode=install cp ./pfs_client.la $(phplibdir)
 

@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <stddef.h>
 #include <unistd.h>
-enum {ADD_PATH_BY_STORAGE = 0, ADD_PATH_BY_UPLOAD, ADD_PATH_BY_BNAME, ADD_DIR_BY_UPLOAD = 0x04};
+enum {ADD_PATH_BY_STORAGE = 0, ADD_PATH_BY_UPLOAD, ADD_PATH_BY_BNAME, ADD_DIR_BY_UPLOAD = 0x04, ADD_QUERY_DIR, ADD_QUERY_USR1, ADD_QUERY_USR2};
 enum {ADD_SET_GROUP = 0, ADD_SET_DOMAIN};
 typedef struct {
 	char errmsg[256];  /*操作不成功时，此字段包含具体的错误信息*/

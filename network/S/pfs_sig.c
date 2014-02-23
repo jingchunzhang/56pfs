@@ -33,6 +33,7 @@ static list_head_t activelist;  //用来检测超时
 static list_head_t online_list[256]; //用来快速定位查找
 static list_head_t sync_list;  //初始化的待同步任务，不解析具体的源ip
 
+volatile int init_sync_flag = 0;
 int svc_initconn(int fd); 
 int active_send(pfs_cs_peer *peer, t_pfs_sig_head *h, t_pfs_sig_body *b);
 
@@ -226,7 +227,6 @@ void svc_timeout()
 	scan_cfg_iplist_and_connect();
 	if (self_stat == UNKOWN_STAT)
 	{
-		init_sync_list();
 		self_stat = WAIT_SYNC;
 		sync_para.flag = 0;
 	}
@@ -235,7 +235,7 @@ void svc_timeout()
 		if(sync_para.flag == 1)
 		{
 			time_t cur = time(NULL);
-			if (cur - sync_para.last > 600)
+			if (cur - sync_para.last > 3600)
 			{
 				LOG(pfs_sig_log_err, LOG_ERROR, "too long [%ld:%ld]\n", cur, sync_para.last);
 				sync_para.flag = 0;

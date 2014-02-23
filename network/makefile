@@ -2,7 +2,7 @@ NS=pfs_master
 CC=gcc
 CXX=g++
 INC+= 
-LIB+= -lpthread -ldl -lrt -rdynamic -L../lib -lpfs -lstdc++
+LIB+= -lpthread -ldl -lrt -rdynamic -L../lib -lpfs -lstdc++ -L../3rdlib -lnmshm
 TARGET=$(NS)
 ALL:$(TARGET)
 
