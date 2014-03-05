@@ -1,0 +1,94 @@
+	disable_watchdog = 1   #是否� watchdog
+	maxfds = 10240         #最大句柄数量
+	sig_port = 49715       #信令端口
+	data_port = 49716      #数据端口
+	timeout = 360          #链路超时
+	real_rm_time = 7200    #删除文件延时时间
+	cs_sync_dir = 1        #是否开启CS目录同步
+	cktimeout = 1          #检查插件svc_timeout间隔，单位秒
+	task_timeout = 86400   #任务超时时间
+	fcs_max_connects = 100 #cs链接源站数据链路并发连接数量
+	cs_max_connects = 200  #cs链接末端数据链路并发连接数量
+	disk_minfree = 20G     #数据磁盘最小剩余
+	timedlock_time = 10    #锁等待时间。
+	sync_dir_count = 10    #24小时CS发起目录同步请求数量
+[log]
+	main_loglevel = debug  #框架日志级别
+	main_logname = ../log/main.log #框架日志名称
+	main_lognum = 12   #框架日志保留数量
+	main_logtime = 21600 #框架日志滚动时间
+
+	#信令链路日志
+	sig_loglevel = debug
+	sig_logname = ../log/sig.log
+	sig_lognum = 12
+	sig_logtime = 21600
+
+	#数据链路日志
+	data_logname = ../log/data.log
+	data_loglevel = debug
+	data_lognum = 12
+	data_logtime = 21600
+
+	#上传链路日志
+	up_logname = ../log/up.log
+	up_loglevel = debug
+	up_lognum = 12
+	up_logtime = 21600
+
+	#VOSS日志
+	voss_logname = ../log/voss.log
+	voss_loglevel = debug
+	voss_lognum = 12
+	voss_logtime = 21600
+
+	#代理链路日志
+	agent_logname = ../log/agent.log
+	agent_loglevel = debug
+	agent_lognum = 12
+	agent_logtime = 21600
+
+[group]
+#分组设置
+	name = photo
+	name = music
+	name = pic
+
+[iplist]
+#集群配置
+	photo = ./photo.txt
+	music = ./music.txt
+	pic = ./pic.txt
+	nameserver = 10.16.84.234
+	nameserver = 10.16.84.235
+	nameserver = 10.16.84.241
+	nameserver = 10.16.84.242
+
+[pfs]
+	test = 0
+	#datadir = /diska/m2v/photo2video/upMusic/
+	#datadir = /diska/m2v/photo2video/upImg/
+	datadir = /diska/htdocs/pic/images/
+	path = ../path
+	deldir = ../path/delfile
+	sync_starttime = 00:00
+	sync_endtime = 24:00
+
+[poss]
+	#处理文件后缀列表，其它文件忽略。
+	server_ip = 10.16.84.237
+	tmpdir = ../path/tmpdir
+	timesplice = 120
+	interval = 300
+
+[file]
+	#allow_suffix = *.mp3
+	allow_suffix = *.jpg
+	allow_suffix = *.jpeg
+
+[dir]
+#目录配置
+	#dir1 = 100
+	#dir2 = 100
+	dir1 = 30
+	dir2 = 30
