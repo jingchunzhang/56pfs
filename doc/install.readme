@@ -1,0 +1,16 @@
+默认安装目录: /home/pfs/
+
+如果需要修改安装路径，请修改makefile里的install 路径
+
+
+安装过程:
+make ; make install
+安装php扩展过程:
+
+cd php_client;
+phpize --clean;
+phpize
+./configure --with-php-config=/home/php/bin/php-config
+make clean ; make ; make install
+
+
