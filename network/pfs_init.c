@@ -282,10 +282,7 @@ static int init_nameserver()
 			return -1;
 	}
 	if (i == 0)
-	{
 		LOG(glogfd, LOG_ERROR, "no iplist_nameserver!\n");
-		return -1;
-	}
 	return 0;
 }
 

@@ -99,10 +99,7 @@ int svc_initconn(int fd)
 	LOG(pfs_sig_log, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
 	pfs_cs_peer *peer = NULL;
 	if (find_ip_stat(ip, &peer) == 0)
-	{
 		LOG(pfs_sig_log_err, LOG_ERROR, "fd %d ip %u dup connect!\n", fd, ip);
-		return RET_CLOSE_DUP;
-	}
 	LOG(pfs_sig_log, LOG_TRACE, "%s:%s:%d\n", ID, FUNC, LN);
 	struct conn *curcon = &acon[fd];
 	if (curcon->user == NULL)
