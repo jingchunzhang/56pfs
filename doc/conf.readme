@@ -75,13 +75,13 @@
 	sync_endtime = 24:00
 
 [poss]
-	#处理文件后缀列表，其它文件忽略。
 	server_ip = 10.16.84.237
 	tmpdir = ../path/tmpdir
 	timesplice = 120
 	interval = 300
 
 [file]
+	#处理文件后缀列表，其它文件忽略。
 	disable_filter = 0 # disable_filter = 1 时同步所有文件.
 	#allow_suffix = *.mp3
 	allow_suffix = *.jpg
