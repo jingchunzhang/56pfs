@@ -82,6 +82,7 @@
 	interval = 300
 
 [file]
+	disable_filter = 0 # disable_filter = 1 时同步所有文件.
 	#allow_suffix = *.mp3
 	allow_suffix = *.jpg
 	allow_suffix = *.jpeg

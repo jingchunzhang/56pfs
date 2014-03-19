@@ -14,6 +14,7 @@
 extern int glogfd;
 static list_head_t allow_list;
 static list_head_t deny_list;
+static int disable_filter = 1;
 
 typedef struct {
 	list_head_t list;
@@ -68,6 +69,12 @@ static int sub_init_filter(char *s, int type, list_head_t *mlist)
 
 int init_file_filter()
 {
+	disable_filter = myconfig_get_intval( "file_disable_filter", 1);
+	if (disable_filter)
+	{
+		LOG(glogfd, LOG_NORMAL, "disable_filter!\n");
+		return 0;
+	}
 	INIT_LIST_HEAD(&allow_list);
 	INIT_LIST_HEAD(&deny_list);
 	char* pval = NULL; int i = 0;
@@ -111,6 +118,8 @@ static int check_file_allow(char *file)
  */
 int check_file_filter(char *file)
 {
+	if (disable_filter)
+		return 0;
 	return check_file_allow(file);
 }
 
